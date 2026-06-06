@@ -1,1 +1,12 @@
-package form;  
+package form;
+
+import controller.KelasController;
+import java.awt.*;
+import java.util.List;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+import model.Kelas;
+import util.UIUtils;
+
+public class KelasForm extends JPanel { private final KelasController c=new KelasController(); private final DefaultTableModel model=new DefaultTableModel(new String[]{"ID","Kode Kelas","Nama Kelas"},0){ public boolean isCellEditable(int r,int c){return false;}}; private final JTable table=new JTable(model); public KelasForm(){ setLayout(new BorderLayout()); JPanel p=UIUtils.page("Kelas"); JTextField search=UIUtils.textField(20); JButton add=UIUtils.button("TAMBAH",UIUtils.GREEN); JButton edit=UIUtils.button("EDIT",UIUtils.BLUE); JButton del=UIUtils.button("HAPUS",UIUtils.RED); p.add(UIUtils.toolbar(search,add,edit,del),BorderLayout.NORTH); JPanel card=UIUtils.card(); card.add(UIUtils.tableScroll(table)); p.add(card); add(p); TableRowSorter<DefaultTableModel> sorter=new TableRowSorter<>(model); table.setRowSorter(sorter); UIUtils.bindSearch(search,sorter); add.addActionListener(e->dialog(null)); edit.addActionListener(e->{Kelas k=selected(); if(k!=null)dialog(k);}); del.addActionListener(e->{Kelas k=selected(); if(k!=null&&UIUtils.showConfirm(this,"Hapus kelas?")){c.delete(k.getId()); load();}}); load(); } private Kelas selected(){ int r=table.getSelectedRow(); if(r<0)return null; int m=table.convertRowIndexToModel(r); return new Kelas((int)model.getValueAt(m,0),String.valueOf(model.getValueAt(m,1)),String.valueOf(model.getValueAt(m,2))); } private void load(){ model.setRowCount(0); List<Kelas> list=c.getAll(); for(Kelas k:list)model.addRow(new Object[]{k.getId(),k.getKodeKelas(),k.getNamaKelas()}); } private void dialog(Kelas k){ JTextField kode=UIUtils.textField(15), nama=UIUtils.textField(20); if(k!=null){kode.setText(k.getKodeKelas()); nama.setText(k.getNamaKelas());} JPanel p=new JPanel(new GridLayout(0,1,6,6)); p.add(UIUtils.formLabel("Kode Kelas")); p.add(kode); p.add(UIUtils.formLabel("Nama Kelas")); p.add(nama); if(JOptionPane.showConfirmDialog(this,p,k==null?"Tambah Kelas":"Edit Kelas",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION){ Kelas val=new Kelas(k==null?0:k.getId(),kode.getText(),nama.getText()); if(c.save(val)){UIUtils.showSuccess(this,"Data tersimpan"); load();} else UIUtils.showError(this,"Gagal menyimpan"); } } }
