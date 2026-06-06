@@ -1,1 +1,16 @@
-package form;  
+package form;
+
+import controller.LaporanController;
+import java.awt.*;
+import java.io.File;
+import java.time.LocalDate;
+import java.util.List;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import util.UIUtils;
+
+public class LaporanForm extends JPanel { private final LaporanController c=new LaporanController(); private final DefaultTableModel kasModel=new DefaultTableModel(new String[]{"Tanggal","Keterangan","Debit","Kredit","Saldo"},0); private final DefaultTableModel tungModel=new DefaultTableModel(new String[]{"NIS","Nama","Kelas","Bulan","Nominal"},0); public LaporanForm(){ setLayout(new BorderLayout()); JPanel p=UIUtils.page("Laporan"); JTabbedPane tabs=new JTabbedPane(); tabs.addTab("Buku Kas Umum", bukuKas()); tabs.addTab("Tunggakan SPP", tunggakan()); p.add(tabs); add(p); }
+private JPanel bukuKas(){ JPanel p=new JPanel(new BorderLayout(0,10)); p.setOpaque(false); JTextField dari=UIUtils.textField(10), sampai=UIUtils.textField(10); dari.setText(LocalDate.now().withDayOfMonth(1).toString()); sampai.setText(LocalDate.now().toString()); JButton show=UIUtils.button("TAMPILKAN",UIUtils.BLUE), csv=UIUtils.buttonOutline("Export CSV",UIUtils.GREEN), pdf=UIUtils.buttonOutline("Export PDF",UIUtils.RED); JTable table=new JTable(kasModel); p.add(UIUtils.toolbar(dari,sampai,show,csv,pdf),BorderLayout.NORTH); p.add(UIUtils.tableScroll(table)); show.addActionListener(e->{ kasModel.setRowCount(0); for(String[] r:c.getBukuKas(LocalDate.parse(dari.getText()),LocalDate.parse(sampai.getText())))kasModel.addRow(r); }); csv.addActionListener(e->export(kasModel,"buku_kas.csv",false)); pdf.addActionListener(e->export(kasModel,"buku_kas.pdf",true)); show.doClick(); return p; }
+private JPanel tunggakan(){ JPanel p=new JPanel(new BorderLayout(0,10)); p.setOpaque(false); JComboBox<Integer> bulan=new JComboBox<>(); for(int i=1;i<=12;i++)bulan.addItem(i); JComboBox<Integer> tahun=new JComboBox<>(); for(int i=2024;i<=2030;i++)tahun.addItem(i); tahun.setSelectedItem(LocalDate.now().getYear()); JButton show=UIUtils.button("TAMPILKAN",UIUtils.BLUE), csv=UIUtils.buttonOutline("Export CSV",UIUtils.GREEN), pdf=UIUtils.buttonOutline("Export PDF",UIUtils.RED); JTable table=new JTable(tungModel); p.add(UIUtils.toolbar(bulan,tahun,show,csv,pdf),BorderLayout.NORTH); p.add(UIUtils.tableScroll(table)); show.addActionListener(e->{ tungModel.setRowCount(0); for(String[] r:c.getTunggakanSPP((Integer)bulan.getSelectedItem(),(Integer)tahun.getSelectedItem()))tungModel.addRow(r); }); csv.addActionListener(e->export(tungModel,"tunggakan.csv",false)); pdf.addActionListener(e->export(tungModel,"tunggakan.pdf",true)); show.doClick(); return p; }
+private void export(DefaultTableModel m,String name,boolean pdf){ JFileChooser fc=new JFileChooser(); fc.setSelectedFile(new File(name)); if(fc.showSaveDialog(this)==JFileChooser.APPROVE_OPTION){ List<String[]> data=new java.util.ArrayList<>(); for(int r=0;r<m.getRowCount();r++){ String[] row=new String[m.getColumnCount()]; for(int col=0;col<m.getColumnCount();col++)row[col]=String.valueOf(m.getValueAt(r,col)); data.add(row);} String[] headers=new String[m.getColumnCount()]; for(int i=0;i<headers.length;i++)headers[i]=m.getColumnName(i); boolean ok=pdf?c.exportPDF(data,headers,"Laporan",fc.getSelectedFile()):c.exportCSV(data,headers,fc.getSelectedFile()); if(ok)UIUtils.showSuccess(this,"Export berhasil"); else UIUtils.showError(this,"Export gagal"); } }
+}
